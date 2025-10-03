@@ -1,0 +1,3 @@
+numpy==1.26.3
+pandas==2.2.0
+flink-rest-client==1.0.8
