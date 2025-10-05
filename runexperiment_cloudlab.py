@@ -8,6 +8,7 @@ import subprocess
 import math, random
 from subprocess import Popen, PIPE, call
 
+# map from MSR hexcode to DVFS processor frequency (Ghz)
 dvfs_dict = {
     "0x0c00" : 1.2,
     "0x0d00" : 1.3,
@@ -33,7 +34,7 @@ dvfs_dict = {
 ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
 FLINKROOT='~/eeflink/flink-simplified'
-MAXCORES=16    # num of cores. 16C32T
+MAXCORES=16    # num of cores
 SERVERIPS = ['10.10.1.2', '10.10.1.3', '10.10.1.4']
 
 # the script will run on bootstrap
@@ -48,6 +49,7 @@ jmip=bootstrap
 jmpt=8081
 
 # Global vars
+RATE_SEPERATOR = '_'
 GITR=1
 GDVFS=""
 GQUERY=""
@@ -220,53 +222,6 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
     gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* "+flinklogdir+"/"+bootstrap.replace('.','_')+"/"
     runcmd(gcmd)
 
-
-def parseFlinkLatency(filename):
-    f = open(filename, 'r')
-    lines = f.readlines()
-    draft = []
-    result = []
-    for i in range(len(lines)):
-        if "[] - %latency%" in lines[i]:
-            draft.append(lines[i][lines[i].index("[] - %latency%")+len("[] - %latency%"):])
-    for i in range(len(draft)):
-        result.append(int(draft[i][:draft[i].index("%")]))
-    f.close()
-    return result
-
-def parseFlinkMetrics(flinklogdir):
-    fnames=os.listdir(flinklogdir)
-    print("--------------------------------------------------------------------------------------")
-    print("parseFlinkMetrics on : "+flinklogdir)
-    explist=[]
-    for fn in fnames:
-        #if('Operator_' in fn):
-        if(os.path.isfile(flinklogdir+'/'+fn)):
-            print("------------------------------------------------------------------------------------------")
-            kwlist={'numRecordsInPerSecond':[], 'numRecordsOutPerSecond':[], 'busyTimeMsPerSecond':[], 'backPressuredTimeMsPerSecond':[]}
-            ff=open(flinklogdir+'/'+fn, 'r').readlines()
-            fcnt=0
-            for _ll, _lc in enumerate(ff):
-                for lc in _lc.split('; '):
-                    for kw in kwlist.keys():
-                        if(kw in lc):
-                            ldict=eval(lc.replace('[','').replace(']',''))
-                            kwlist[kw].append(float(ldict['value']))
-                            fcnt+=1
-            print(fn,fcnt)
-            exp=dict()
-            exp['name']=fn
-            for kw in kwlist.keys():
-                exp[kw+'_avg']=np.average(np.nan_to_num(np.array(kwlist[kw])))
-                #print(kw, kwlist[kw])
-            explist.append(exp)
-    expdf=pd.DataFrame(explist).fillna(0)
-    # expdf['true_input_rate']=expdf['numRecordsInPerSecond_avg']/(expdf['busyTimeMsPerSecond_avg']/1000)
-    # expdf=expdf.sort_values(by = ['numRecordsOutPerSecond_avg', 'latency_avg', 'latency_max'], ascending = [True, True, True])
-    print("-------------------------------------------------------------------------------------")
-    print(expdf)
-
-
 def parseFlinkMetricsMod(flinklogdir, loc="", ignore_mins=5):
     fnames=os.listdir(flinklogdir)
     ignore_param = int((ignore_mins*60)/10);
@@ -321,8 +276,14 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     setITR(ITR)
     setDVFS(DVFS)
 
-    print(f"FLINKRATE = {FLINKRATE}")
-    
+    _flinkrate=FLINKRATE.split(RATE_SEPERATOR)
+    _flinkdur=0
+    for i in range(len(_flinkrate)):
+        if(i%2!=0):
+            _flinkdur+=int(_flinkrate[i])
+
+    _flinkdur=int(_flinkdur/1000)
+    print("Flink job duration ", _flinkdur, "secs starting....")
     KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fratetype_static_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
         
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
@@ -338,9 +299,6 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     if GRERUNFLINK == True:
         stopflink()
         startflink()
-    with open("time.txt", "a") as f:
-        ct = datetime.datetime.now()
-        print("Time flink started:",ct,file=f)
     time.sleep(20)
         
     ## running the work
@@ -352,7 +310,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     elif GQUERY == "imgproc":
         ur = upload_jar(jarpath_imgproc)
     jar_id = ur['filename'].split('/')[-1]
-
+    
     if GQUERY == "query1":
         ## for query1 only
         job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'blurstep': 2})
@@ -365,42 +323,11 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("deployed job id=", job_id)
     time.sleep(30)
 
-    #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
-    #cleanITRlogs()
-    
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
-    #getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
-        
-    ## get ifconfig RX, TX Bytes
-    #rxpackets2, rxbytes2 = getRX()
-    #txpackets2, txbytes2 = getTX()
-    #with open(itrlogsdir+"/ifconfigRXTX.log","w") as f:
-    #    print(f"RX_packets, {rxpackets2-rxpackets1}", file=f)
-    #    print(f"RX_bytes, {rxbytes2-rxbytes1}", file=f)
-    #    print(f"TX_packets, {txpackets2-txpackets1}", file=f)
-    #    print(f"TX_bytes, {txbytes2-txbytes1}", file=f)
-
-    #stateslist2 = getCStates()
-    #with open(itrlogsdir+"/sleepstates.log","w") as f:
-    #    subt = [e2 - e1 for (e1, e2) in zip(stateslist1, stateslist2)]
-    #    print(f"POLL, C1, C1E, C3, C6", file=f)
-    #    print(f"{subt}", file=f)
 
     if GRERUNFLINK == True:
         stopflink()
-    with open("time.txt","a") as f:
-        ct2 = datetime.datetime.now()
-        print("Time flink stopped:",ct2, file=f)
-    fnames=os.listdir(flinklogdir+bootstrap.replace('.','_')+"/")
-    latency_list={}
-    latency_avg={}
-    for ff in fnames:
-        latency_list[ff]=parseFlinkLatency(flinklogdir+bootstrap.replace('.','_')+"/"+ff)
-        latency_avg[ff]=np.average(latency_list[ff])
-
-    print('latency in flink log: ', latency_list)
-    print('average latency in flink log', latency_avg)
 
     parseFlinkMetricsMod(flinklogdir, loc=KWD, ignore_mins=2)
 
