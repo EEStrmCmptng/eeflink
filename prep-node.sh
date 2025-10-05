@@ -6,7 +6,7 @@ CWD=$(pwd)
 GENIUSER=`geni-get user_urn | awk -F+ '{print $4}'`
 
 sudo apt-get update
-sudo apt install msr-tools cpufrequtils maven -y
+sudo apt install msr-tools cpufrequtils maven python3 python3-pip -y
 
 # disable HyperThreads
 echo off | sudo tee /sys/devices/system/cpu/smt/control
@@ -69,6 +69,40 @@ sudo ufw allow from 10.10.1.8
 sudo ufw allow from 10.10.1.9
 sudo ufw allow from 10.10.1.10
 
+# clear current allowed ports just in case
+sudo ufw delete allow 11211
+sudo ufw delete allow 8081
+sudo ufw delete allow 6123
+sudo ufw delete allow 80
+sudo ufw delete allow 443
+
+# mcd port
+sudo ufw allow from 10.10.1.1 to any port 11211 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 11211 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 11211 proto tcp
+sudo ufw allow from 10.10.1.4 to any port 11211 proto tcp
+
+# only allow our testing nodes IP to use Flink ports
+sudo ufw allow from 10.10.1.1 to any port 8081 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 8081 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 8081 proto tcp
+sudo ufw allow from 10.10.1.4 to any port 8081 proto tcp
+
+sudo ufw allow from 10.10.1.1 to any port 6123 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 6123 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 6123 proto tcp
+sudo ufw allow from 10.10.1.4 to any port 6123 proto tcp
+
+sudo ufw allow from 10.10.1.1 to any port 80 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 80 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 80 proto tcp
+sudo ufw allow from 10.10.1.4 to any port 80 proto tcp
+
+sudo ufw allow from 10.10.1.1 to any port 443 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 443 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 443 proto tcp
+sudo ufw allow from 10.10.1.4 to any port 443 proto tcp
+
 # deny everything else
 sudo ufw default allow outgoing
 sudo ufw default deny incoming
@@ -97,5 +131,5 @@ sudo ls -l /dev/cpu/*/msr
 sudo chmod g+rw /dev/cpu/*/msr
 sudo usermod -aG msr $GENIUSER
 
-echo "🔴🔴  Re-login for msr group changes to take effect 🔴🔴"
+echo "🔴🔴  Exit and relogin to this node for msr group changes to take effect 🔴🔴"
 sudo newgrp msr
