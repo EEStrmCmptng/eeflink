@@ -1,5 +1,14 @@
 # Energy Efficiency Flink Experiments
 
+## Cloudlab Node Setup
+### Assume 4 nodes with IP addresses 10.10.1.1, 10.10.1.2, 10.10.1.3, 10.10.1.4
+```
+10.10.1.1 -> JobManager
+10.10.1.2 -> Source
+10.10.1.3 -> Mapper
+10.10.1.4 -> Sink
+```
+
 ## 5 minutes
 ```
 ./prep-node.sh
