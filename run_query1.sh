@@ -11,9 +11,9 @@ export MDVFS=${MDVFS:="0c00 0e00 1000 1200 1400 1600 1800 1a00"}
 #export ITRS=${ITRS:="1"}
 #export ITRS=${ITRS:="2 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000"}
 export ITRS=${ITRS:="2 100 200 300 400 500 600 700 800 900 1000"}
-export FLINK_RATE=${FLINK_RATE:="200000_600000"} # 200K records-per-second for 10 minutes
+export FLINK_RATE=${FLINK_RATE:="200000_600000"} # 200K records-per-second for 600 seconds or 10 minutes
 export BUFF=${BUFF:="-1"}
-export FLINK_RATE_TYPE=${FLINK_RATE_TYPE:="static"} # Set rate type to static, predictable or spiking
+export FLINK_RATE_TYPE=${FLINK_RATE_TYPE:="static"} # Hardcoded for now
 
 export IPSINK=${IPSINK:="10.10.1.4"}
 export IPMAPPER=${IPMAPPER:="10.10.1.3"}
@@ -78,8 +78,8 @@ function dynamic {
 		    echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
 		    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
 			    
-		    # Doing a warmup run first
-		    #python -u runexperiment_cloudlab.py --flinkrate "666_6666" --flinkratetype "static" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+		    # Do a warmup run first
+		    python -u runexperiment_cloudlab.py --flinkrate "666_6666" --flinkratetype "static" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 
 		    # experiment run
 		    echo "🟢🟢 [INFO] Run Experiment 🟢🟢"
