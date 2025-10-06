@@ -8,8 +8,12 @@
 10.10.1.3 -> Mapper
 10.10.1.4 -> Sink
 ```
-## Node types: [c6220, c220g1, c220g2, c220g5]
+## Use one of the following node types: [c6220, c220g1, c220g2, c220g5]
 ![Example cloudlab node config](https://github.com/EEStrmCmptng/eeflink/blob/master/images/cloudlabnodes.png)
+
+## Flink experiment setup:
+![Example flink setup](https://github.com/EEStrmCmptng/eeflink/blob/master/images/flinksetup.png)
+
 
 ## Setup node: 5 minutes - Run on all four nodes
 ```
@@ -18,6 +22,7 @@
 
 ## Build and install Flink: 15 minutes - Run on all four nodes
 ```
+cd ~/eeflink
 git clone git@github.com:EEStrmCmptng/flink-simplified.git
 cd flink-simplified/scripts
 ./makeflink.sh
@@ -25,6 +30,7 @@ cd flink-simplified/scripts
 
 ## Build and install benchmarks: 3 mins - Run on all four nodes
 ```
+cd ~/eeflink
 git clone git@github.com:EEStrmCmptng/flink-benchmarks.git
 cd flink-benchmarks
 mvn clean package
