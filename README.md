@@ -37,7 +37,10 @@ mvn clean package
 ```
 
 ## Sample experimental run, run on JobManage node only
-```This generates 200K records-per-second for 600 seconds or 10 minutes, with 16 source, 16 mapper, and 16 sink tasks with DVFS policy ondemand and running query1
+```
+This generates 200K records-per-second for 600 seconds or 10 minutes,
+with 16 source, 16 mapper, and 16 sink tasks with DVFS policy
+ondemand and running query1
 ```
 ```
 cd ~/eeflink
@@ -46,7 +49,9 @@ MCFG="16;16;16" MQUERY="query1" FLINK_RATE="200000_600000" MPOLICY="ondemand" ./
 
 ## Correct experiment output
 ```
-numRecordsOutPerSecond_avg should match the benchmark generating 200K records per second as we want to minimize backpressure
+numRecordsOutPerSecond_avg should match the benchmark
+generating 200K records per second as we want
+to minimize backpressure
 ```
 ```
                            name  numRecordsInPerSecond_avg  numRecordsOutPerSecond_avg  busyTime_%  backPressuredTime_%
