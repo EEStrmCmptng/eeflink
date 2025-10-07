@@ -86,7 +86,7 @@ function dynamic {
 		    cleanLogs			    
 		    sleep 1
 
-		    python -u runexperiment_cloudlab.py --flinkrate ${ --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 		    
 		    sleep 1			    
  		    echo "🟢🟢 [INFO] FINISH ${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i} [INFO] 🟢🟢"
