@@ -70,25 +70,36 @@ function dynamic {
 	for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
 	    for fr in $FLINK_RATE; do
 		for pol in $MPOLICY; do
+
+		    # starts Flink cluster
 		    echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink"
 		    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink
-
+		    sleep 1
 		    echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
 		    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
-			    
-		    # Do a warmup run first
-		    python -u runexperiment_cloudlab.py --flinkrate "666_6666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
-
-		    # experiment run
+		    sleep 1
+	    
+		    # starts experiment run
 		    echo "🟢🟢 [INFO] Run Experiment 🟢🟢"
 		    echo "🟢🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢🟢"
 
-		    cleanLogs			    
+		    # clean up previous log entries
+		    cleanLogs
+
+		    # starts rapl power logging service
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo rm /tmp/rapl.log
+		    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 		    sleep 1
 
 		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
-		    
-		    sleep 1			    
+		    sleep 1
+
+		    # retrieve rapl power log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+ 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fratetype_static_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 		    scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
+
  		    echo "🟢🟢 [INFO] FINISH ${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i} [INFO] 🟢🟢"
 		done
 	    done

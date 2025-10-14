@@ -36,6 +36,11 @@ cd flink-benchmarks
 mvn clean package
 ```
 
+### Install RAPL power log on the Mapper node only
+```
+Follow README at https://github.com/handong32/rapl-service.git
+```
+
 ## Sample experimental run, run on JobManage node only
 ```
 This generates 200K records-per-second for 600 seconds or 10 minutes,
