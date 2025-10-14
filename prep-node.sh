@@ -62,12 +62,7 @@ sudo ufw allow ssh
 sudo ufw allow from 10.10.1.1
 sudo ufw allow from 10.10.1.2
 sudo ufw allow from 10.10.1.3
-sudo ufw allow from 10.10.1.5
-sudo ufw allow from 10.10.1.6
-sudo ufw allow from 10.10.1.7
-sudo ufw allow from 10.10.1.8
-sudo ufw allow from 10.10.1.9
-sudo ufw allow from 10.10.1.10
+sudo ufw allow from 10.10.1.4
 
 # clear current allowed ports just in case
 sudo ufw delete allow 11211

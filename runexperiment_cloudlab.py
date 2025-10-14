@@ -34,7 +34,6 @@ dvfs_dict = {
 ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
 FLINKROOT='~/eeflink/flink-simplified'
-MAXCORES=16    # num of cores
 SERVERIPS = ['10.10.1.2', '10.10.1.3', '10.10.1.4']
 
 # the script will run on bootstrap
@@ -209,12 +208,12 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
                     t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
                     #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
-                    #print(vts, vname, t_opsout)
+                    #print(vts, vname, t_opsout, t_backpressure)
                     
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
 
-        time.sleep(interval)                    
+        time.sleep(interval)
         clock-=interval
 
     gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* "+flinklogdir+"/"+victim.replace('.','_')+"/"
@@ -222,7 +221,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
     gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* "+flinklogdir+"/"+bootstrap.replace('.','_')+"/"
     runcmd(gcmd)
 
-def parseFlinkMetricsMod(flinklogdir, loc="", ignore_mins=5):
+def parseFlinkMetricsMod(flinklogdir, loc="", ignore_mins=2):
     fnames=os.listdir(flinklogdir)
     ignore_param = int((ignore_mins*60)/10);
     print("--------------------------------------------------------------------------------------")
@@ -231,7 +230,7 @@ def parseFlinkMetricsMod(flinklogdir, loc="", ignore_mins=5):
     for fn in fnames:
         #if('Operator_' in fn):
         if(os.path.isfile(flinklogdir+'/'+fn)):
-            print("------------------------------------------------------------------------------------------")
+            #print("------------------------------------------------------------------------------------------")
             kwlist={'numRecordsInPerSecond':[], 'numRecordsOutPerSecond':[], 'busyTimeMsPerSecond':[], 'backPressuredTimeMsPerSecond':[]}
             ff=open(flinklogdir+'/'+fn, 'r').readlines()
             fcnt=0
@@ -248,7 +247,6 @@ def parseFlinkMetricsMod(flinklogdir, loc="", ignore_mins=5):
             for kw in kwlist.keys():
                 exp[kw+'_avg']=np.average(np.nan_to_num(np.array(kwlist[kw][ignore_param:])))
                 exp[kw+'_std']=np.std(np.nan_to_num(np.array(kwlist[kw][ignore_param:])))
-                #print(kw, kwlist[kw])
             explist.append(exp)
     expdf=pd.DataFrame(explist).fillna(0)
     # expdf['true_input_rate']=expdf['numRecordsInPerSecond_avg']/(expdf['busyTimeMsPerSecond_avg']/1000)
@@ -289,6 +287,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
+    runcmd('rm -rf logs/'+KWD) # clean up previous experiment if it exists else it will append to the same logs
     runcmd('mkdir logs/'+KWD)
     runcmd('mkdir '+flinklogdir)
     runcmd('mkdir '+itrlogsdir)
@@ -331,7 +330,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
 
     parseFlinkMetricsMod(flinklogdir, loc=KWD, ignore_mins=2)
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--cores", help="num of cpu cores")
     parser.add_argument("--itr", help="Static interrupt delay [2, 1024]")
